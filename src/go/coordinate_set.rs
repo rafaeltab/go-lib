@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::go::flexible_board::coordinate::FlexibleCoordinate;
+use crate::go::coordinate::FlexibleCoordinate;
 
 #[derive(Debug)]
 pub struct CoordinateSet(HashSet<FlexibleCoordinate>);
@@ -109,6 +109,7 @@ impl CoordinateSet {
         Self(result)
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

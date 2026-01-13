@@ -1,24 +1,67 @@
-#[derive(Debug, Clone, Copy)]
-pub struct Coordinate {
-    pub index: u16,
+use crate::go::{bitmask::FlexibleBitMask, board::FlexibleBoard};
+
+#[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
+pub struct FlexibleCoordinate {
+    /// 0-based x-axis position
+    pub x: u16,
+    /// 0-based y-axis position.
+    pub y: u16,
 }
 
-impl Coordinate {
-    #[allow(dead_code)]
-    pub fn init(x: u16, y: u16) -> Self {
-        assert!(x < 19 && y < 19, "X or Y was above 19, which is impossible");
+impl FlexibleCoordinate {
+    pub fn up(&self) -> Self {
         Self {
-            index: (x * 19u16) + y,
+            x: self.x,
+            y: self.y + 1,
         }
     }
 
-    pub fn from_index(index: u16) -> Self {
-        debug_assert!(index < (19 * 19));
-        Self { index }
+    pub fn down(&self) -> Option<Self> {
+        if self.y == 0 {
+            return None;
+        }
+        Some(Self {
+            x: self.x,
+            y: self.y - 1,
+        })
     }
 
-    pub fn to_board(self) -> (usize, usize) {
-        debug_assert!(self.index < (19 * 19));
-        ((self.index / 64) as usize, (self.index % 64) as usize)
+    pub fn left(&self) -> Option<Self> {
+        if self.x == 0 {
+            return None;
+        }
+        Some(Self {
+            x: self.x - 1,
+            y: self.y,
+        })
+    }
+
+    pub fn right(&self) -> Self {
+        Self {
+            x: self.x + 1,
+            y: self.y,
+        }
+    }
+
+    pub fn is_in_mask<TMask: FlexibleBitMask>(&self, mask: &TMask) -> bool {
+        let size = mask.get_size();
+        if self.x >= size.0 {
+            return false;
+        }
+        if self.y >= size.1 {
+            return false;
+        }
+        true
+    }
+
+    pub fn is_in_board<TBoard: FlexibleBoard>(&self, board: &TBoard) -> bool {
+        let size = board.get_size();
+        if self.x >= size.0 {
+            return false;
+        }
+        if self.y >= size.1 {
+            return false;
+        }
+        true
     }
 }

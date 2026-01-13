@@ -1,7 +1,4 @@
-use crate::go::{
-    flexible_board::{board::FlexibleBoard, coordinate::FlexibleCoordinate, coordinate_set::CoordinateSet},
-    player::Player,
-};
+use crate::go::{board::FlexibleBoard, coordinate::FlexibleCoordinate, player::Player};
 
 struct Game<TBoard: FlexibleBoard> {
     board: TBoard,
@@ -19,11 +16,9 @@ impl<TBoard: FlexibleBoard> Game<TBoard> {
 
         Ok(())
     }
-
 }
 
 pub enum MoveError {
     CoordinateOccupied { occupied_by: Player },
     Suicide,
 }
-

@@ -1,4 +1,4 @@
-use crate::go::{flexible_board::coordinate_set::CoordinateSet, player::Player};
+use crate::go::{coordinate_set::CoordinateSet, player::Player};
 
 #[derive(Debug)]
 pub struct Group {
