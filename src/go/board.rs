@@ -3,7 +3,7 @@ use crate::go::{coordinate::Coordinate, player::Player};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Board {
-    board: [BitMask; 2],
+    pub(crate) board: [BitMask; 2],
 }
 
 impl Board {
