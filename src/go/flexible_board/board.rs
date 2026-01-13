@@ -1,4 +1,12 @@
-use crate::go::{flexible_board::coordinate::FlexibleCoordinate, player::Player};
+use std::collections::HashSet;
+
+use crate::go::{
+    flexible_board::{
+        bitmask::TestMask, bitmask_board::BitMaskBoard, coordinate::FlexibleCoordinate,
+        coordinate_set::CoordinateSet, group::Group,
+    },
+    player::{B, Player, W},
+};
 use thiserror::{self, Error};
 
 pub trait FlexibleBoard {
@@ -16,6 +24,19 @@ pub trait FlexibleBoard {
     ) -> Result<(), BoardPlacementError>;
 
     fn clear_at(&mut self, coord: &FlexibleCoordinate) -> Result<(), BoardClearError>;
+
+    fn find_group(&self, coord: &FlexibleCoordinate) -> Option<Group>;
+
+    fn get_liberties(&self, group: Group) -> CoordinateSet {
+        let grown = group.coordinates.grow(self.get_size());
+        let possible_liberties = grown.subtract(&group.coordinates);
+        let liberties: HashSet<FlexibleCoordinate> = possible_liberties
+            .into_iter()
+            .filter(|x| self.get_player_at(x).is_none())
+            .collect();
+
+        CoordinateSet::from_set(liberties)
+    }
 }
 
 #[derive(Debug, Error)]
@@ -28,4 +49,37 @@ pub enum BoardPlacementError {
 pub enum BoardClearError {
     #[error("Position has no players occupying it")]
     CoordinateEmpty,
+}
+
+#[test]
+fn given_a_board_when_get_liberties_is_called_then_it_should_exclude_opponent_pieces() {
+    // Given
+    let e = None;
+    let position = vec![
+        vec![B, W, B, e, e, e, e, e, e],
+        vec![B, e, B, e, e, e, e, e, e],
+        vec![B, B, B, e, e, e, e, e, e],
+        vec![e, e, e, e, e, e, e, e, e],
+        vec![e, e, e, e, e, e, e, e, e],
+        vec![e, e, e, e, e, e, e, e, e],
+        vec![e, e, e, e, e, e, e, e, e],
+        vec![e, e, e, e, e, e, e, e, e],
+        vec![e, e, e, e, e, e, e, e, e],
+    ];
+    let board = BitMaskBoard::from_position(|| TestMask::empty((9, 9)), position);
+
+    // When
+    let white_group = board
+        .find_group(&FlexibleCoordinate { x: 1, y: 0 })
+        .expect("Expected group to be found");
+
+    println!("{:?}", white_group);
+
+    let res = board.get_liberties(white_group);
+
+    println!("{:?}", res);
+
+    // Then
+    let expected = CoordinateSet::set(&[(1, 1)]);
+    assert!(res.equals(&expected));
 }

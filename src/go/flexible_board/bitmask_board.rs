@@ -4,11 +4,12 @@ use crate::go::{
         bitmask::FlexibleBitMask,
         board::{BoardClearError, BoardPlacementError, FlexibleBoard},
         coordinate::FlexibleCoordinate,
+        group::Group,
     },
     player::{B, Player, W},
 };
 
-struct BitMaskBoard<TBitMask: FlexibleBitMask> {
+pub struct BitMaskBoard<TBitMask: FlexibleBitMask> {
     width: u16,
     height: u16,
     black_mask: TBitMask,
@@ -42,7 +43,7 @@ impl<TBitMask: FlexibleBitMask> BitMaskBoard<TBitMask> {
         for y in 0..board.width {
             let vals = &position[y as usize];
             for x in 0..board.height {
-                let val = vals[y as usize];
+                let val = vals[x as usize];
                 if let Some(player) = val {
                     board
                         .set_player_at(&FlexibleCoordinate { x, y }, &player)
@@ -103,6 +104,21 @@ impl<TBitMask: FlexibleBitMask> FlexibleBoard for BitMaskBoard<TBitMask> {
         }
 
         Err(BoardClearError::CoordinateEmpty)
+    }
+
+    fn find_group(&self, coord: &FlexibleCoordinate) -> Option<Group> {
+        let player = self.get_player_at(coord)?;
+
+        let coordinates = match player {
+            Player::Black => &self.black_mask,
+            Player::White => &self.white_mask,
+        }
+        .flood_fill(*coord);
+
+        Some(Group {
+            player,
+            coordinates,
+        })
     }
 }
 
