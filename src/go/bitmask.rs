@@ -59,6 +59,7 @@ pub trait FlexibleBitMask: Sized {
     }
 }
 
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub struct TestMask {
     width: u16,
     height: u16,

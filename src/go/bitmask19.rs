@@ -1,5 +1,6 @@
 use crate::go::{bitmask::FlexibleBitMask, coordinate::FlexibleCoordinate};
 
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct BitMask19(pub [u64; 6]);
 
 impl FlexibleBitMask for BitMask19 {

@@ -1,19 +1,23 @@
+use std::fmt::Debug;
+
 use crate::go::{
     bitmask::FlexibleBitMask,
     board::{BoardClearError, BoardPlacementError, FlexibleBoard},
     coordinate::FlexibleCoordinate,
     group::Group,
     player::Player,
+    playermove::PlaceStoneMove,
 };
 
-pub struct BitMaskBoard<TBitMask: FlexibleBitMask> {
+#[derive(Eq, PartialEq, Debug, Clone)]
+pub struct BitMaskBoard<TBitMask: FlexibleBitMask + Eq + PartialEq + Debug + Clone> {
     width: u16,
     height: u16,
     black_mask: TBitMask,
     white_mask: TBitMask,
 }
 
-impl<TBitMask: FlexibleBitMask> BitMaskBoard<TBitMask> {
+impl<TBitMask: FlexibleBitMask + Eq + PartialEq + Debug + Clone> BitMaskBoard<TBitMask> {
     pub fn new<TMaskFactory: Fn() -> TBitMask>(mask_factory: TMaskFactory) -> Self {
         let white_mask = mask_factory();
         let black_mask = mask_factory();
@@ -53,7 +57,9 @@ impl<TBitMask: FlexibleBitMask> BitMaskBoard<TBitMask> {
     }
 }
 
-impl<TBitMask: FlexibleBitMask> FlexibleBoard for BitMaskBoard<TBitMask> {
+impl<TBitMask: FlexibleBitMask + PartialEq + Eq + Debug + Clone> FlexibleBoard
+    for BitMaskBoard<TBitMask>
+{
     fn get_size(&self) -> (u16, u16) {
         (self.width, self.height)
     }
@@ -105,17 +111,24 @@ impl<TBitMask: FlexibleBitMask> FlexibleBoard for BitMaskBoard<TBitMask> {
 
     fn find_group(&self, coord: &FlexibleCoordinate) -> Option<Group> {
         let player = self.get_player_at(coord)?;
+        let m = PlaceStoneMove {
+            player,
+            coord: *coord,
+        };
+        Some(self.predict_group(&m))
+    }
 
-        let coordinates = match player {
+    fn predict_group(&self, m: &PlaceStoneMove) -> Group {
+        let coordinates = match m.player {
             Player::Black => &self.black_mask,
             Player::White => &self.white_mask,
         }
-        .flood_fill(*coord);
+        .flood_fill(m.coord);
 
-        Some(Group {
-            player,
+        Group {
+            player: m.player,
             coordinates,
-        })
+        }
     }
 }
 

@@ -2,10 +2,11 @@ use std::collections::HashSet;
 
 use crate::go::{
     coordinate::FlexibleCoordinate, coordinate_set::CoordinateSet, group::Group, player::Player,
+    playermove::PlaceStoneMove,
 };
 use thiserror::{self, Error};
 
-pub trait FlexibleBoard {
+pub trait FlexibleBoard: Sized {
     /// Get the size of the board in the form of a 1-based x, y tuple.
     fn get_size(&self) -> (u16, u16);
 
@@ -23,7 +24,9 @@ pub trait FlexibleBoard {
 
     fn find_group(&self, coord: &FlexibleCoordinate) -> Option<Group>;
 
-    fn get_liberties(&self, group: Group) -> CoordinateSet {
+    fn predict_group(&self, m: &PlaceStoneMove) -> Group;
+
+    fn get_liberties(&self, group: &Group) -> CoordinateSet {
         let grown = group.coordinates.grow(self.get_size());
         let possible_liberties = grown.subtract(&group.coordinates);
         let liberties: HashSet<FlexibleCoordinate> = possible_liberties
@@ -32,6 +35,44 @@ pub trait FlexibleBoard {
             .collect();
 
         CoordinateSet::from_set(liberties)
+    }
+
+    fn capture(&mut self, coords: &CoordinateSet) -> Result<(), BoardClearError> {
+        for coord in coords.iter() {
+            self.clear_at(coord)?;
+        }
+        Ok(())
+    }
+
+    fn is_potential_suicide(&self, m: PlaceStoneMove) -> bool {
+        let potential_group = self.predict_group(&m);
+        let liberties = self.get_liberties(&potential_group);
+        liberties.is_empty()
+    }
+
+    fn find_groups_to_capture_from_move(&self, m: &PlaceStoneMove) -> Vec<Group> {
+        let PlaceStoneMove { player, coord } = m;
+        let mut res = vec![];
+        let opponent = !*player;
+        let mut neighbours = CoordinateSet::new(vec![*coord]).grow(self.get_size());
+        neighbours.remove(coord);
+
+        for neighbour in neighbours.into_iter() {
+            if !neighbour.is_in_board(self) || self.get_player_at(&neighbour) != Some(opponent) {
+                continue;
+            }
+
+            let group = self
+                .find_group(&neighbour)
+                .expect("Should find a group if there is at least one opponent stone there");
+            let mut liberties = self.get_liberties(&group);
+            liberties.remove(coord);
+            if liberties.is_empty() {
+                res.push(group);
+            }
+        }
+
+        res
     }
 }
 
@@ -81,7 +122,7 @@ mod tests {
 
         println!("{:?}", white_group);
 
-        let res = board.get_liberties(white_group);
+        let res = board.get_liberties(&white_group);
 
         println!("{:?}", res);
 
@@ -108,13 +149,13 @@ mod tests {
         let board = BitMaskBoard::from_position(|| TestMask::empty((9, 9)), position);
 
         // When
-        let white_group = board
+        let black_group = board
             .find_group(&FlexibleCoordinate { x: 2, y: 0 })
             .expect("Expected group to be found");
 
-        println!("{:?}", white_group);
+        println!("{:?}", black_group);
 
-        let res = board.get_liberties(white_group);
+        let res = board.get_liberties(&black_group);
 
         println!("{:?}", res);
 
@@ -122,5 +163,111 @@ mod tests {
         let expected =
             CoordinateSet::set(&[(3, 0), (3, 1), (3, 2), (0, 3), (1, 3), (2, 3), (1, 1)]);
         assert!(res.equals(&expected));
+    }
+
+    #[test]
+    fn given_a_board_when_capture_is_called_then_it_should_remove_the_stones() {
+        // Given
+        let e = None;
+        let position = vec![
+            vec![B, W, B, e, e, e, e, e, e],
+            vec![B, e, B, e, e, e, e, e, e],
+            vec![B, B, B, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+        ];
+        let mut board = BitMaskBoard::from_position(|| TestMask::empty((9, 9)), position);
+
+        // When
+        let black_group = board
+            .find_group(&FlexibleCoordinate { x: 2, y: 0 })
+            .expect("Expected group to be found");
+
+        println!("{:?}", black_group);
+
+        board
+            .capture(&black_group.coordinates)
+            .expect("Should be able to capture stones");
+
+        // Then
+        let mut expected_position = vec![vec![e; 9]; 9];
+        expected_position[0][1] = W;
+        let expected = BitMaskBoard::from_position(|| TestMask::empty((9, 9)), expected_position);
+        assert_eq!(expected, board);
+    }
+
+    #[test]
+    fn given_a_board_when_find_groups_to_capture_from_move_is_called_then_it_should_return_all_groups_that_will_have_no_liberties()
+     {
+        // Given
+        let e = None;
+        let position = vec![
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, W, e, e, e, e],
+            vec![e, e, W, W, B, W, e, e, e],
+            vec![e, W, B, B, e, B, W, e, e],
+            vec![e, e, W, W, B, W, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+        ];
+        let board = BitMaskBoard::from_position(|| TestMask::empty((9, 9)), position);
+
+        // When
+        let capture_groups = board.find_groups_to_capture_from_move(&PlaceStoneMove {
+            player: Player::White,
+            coord: FlexibleCoordinate { x: 4, y: 4 },
+        });
+
+        println!("{:?}", capture_groups);
+
+        // Then
+        assert_eq!(3, capture_groups.len());
+
+        let expected_groups = vec![
+            CoordinateSet::set(&[(4, 3)]),
+            CoordinateSet::set(&[(5, 4)]),
+            CoordinateSet::set(&[(2, 4), (3, 4)]),
+        ];
+
+        for expected_group in expected_groups {
+            let exists: Vec<&Group> = capture_groups
+                .iter()
+                .filter(|x| x.coordinates.equals(&expected_group))
+                .collect();
+            assert_eq!(1, exists.len());
+        }
+    }
+
+    #[test]
+    fn given_a_suicide_move_when_is_potential_suicide_is_called_then_it_should_return_true() {
+        // Given
+        let e = None;
+        let position = vec![
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, B, e, e, e, e],
+            vec![e, e, e, B, e, B, e, e, e],
+            vec![e, e, e, e, B, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+            vec![e, e, e, e, e, e, e, e, e],
+        ];
+        let board = BitMaskBoard::from_position(|| TestMask::empty((9, 9)), position);
+
+        // When
+        let res = board.is_potential_suicide(PlaceStoneMove {
+            player: Player::White,
+            coord: FlexibleCoordinate { x: 4, y: 4 },
+        });
+
+        // Then
+        assert!(res);
     }
 }

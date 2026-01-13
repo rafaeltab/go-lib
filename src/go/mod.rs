@@ -1,9 +1,10 @@
-pub mod board;
-pub mod bitmask_board;
-pub mod coordinate;
 pub mod bitmask;
 pub mod bitmask19;
-pub mod game;
+pub mod bitmask_board;
+pub mod board;
+pub mod coordinate;
 pub mod coordinate_set;
+pub mod game;
 pub mod group;
 pub mod player;
+pub mod playermove;
