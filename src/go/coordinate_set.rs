@@ -10,8 +10,13 @@ impl CoordinateSet {
         CoordinateSet(set)
     }
 
+
     pub fn new(coords: Vec<FlexibleCoordinate>) -> CoordinateSet {
         CoordinateSet(coords.into_iter().collect())
+    }
+
+    pub fn len(&self) -> u16 {
+        self.0.len() as u16
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &FlexibleCoordinate> {

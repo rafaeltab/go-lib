@@ -6,8 +6,8 @@ use crate::go::{
 
 struct Game<TBoard: FlexibleBoard> {
     board: TBoard,
-    captured_black: u16,
-    captured_white: u16,
+    captured_by_black: u16,
+    captured_by_white: u16,
     current_player: Player,
 }
 
@@ -15,8 +15,8 @@ impl<TBoard: FlexibleBoard> Game<TBoard> {
     pub fn new(board: TBoard) -> Self {
         Game {
             board,
-            captured_black: 0,
-            captured_white: 0,
+            captured_by_black: 0,
+            captured_by_white: 0,
             current_player: Player::Black,
         }
     }
@@ -42,11 +42,19 @@ impl<TBoard: FlexibleBoard> Game<TBoard> {
                     }
                 }
 
+                let mut captured = 0;
+
                 for group in groups_to_capture {
-                    self.board
+                    captured += self
+                        .board
                         .capture(&group.coordinates)
                         .expect("Expected capture to work");
                 }
+
+                match player {
+                    Player::Black => self.captured_by_black += captured,
+                    Player::White => self.captured_by_white += captured,
+                };
 
                 self.board
                     .set_player_at(&coord, &player)
@@ -142,5 +150,6 @@ mod test {
             BitMaskBoard::from_position(|| TestMask::empty((9, 9)), expected_position);
 
         assert_eq!(&expected_board, game.get_board());
+        assert_eq!(3, game.captured_by_black);
     }
 }

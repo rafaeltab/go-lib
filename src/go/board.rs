@@ -37,11 +37,11 @@ pub trait FlexibleBoard: Sized {
         CoordinateSet::from_set(liberties)
     }
 
-    fn capture(&mut self, coords: &CoordinateSet) -> Result<(), BoardClearError> {
+    fn capture(&mut self, coords: &CoordinateSet) -> Result<u16, BoardClearError> {
         for coord in coords.iter() {
             self.clear_at(coord)?;
         }
-        Ok(())
+        Ok(coords.len())
     }
 
     fn is_potential_suicide(&self, m: PlaceStoneMove) -> bool {
