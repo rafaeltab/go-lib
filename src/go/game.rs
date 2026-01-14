@@ -6,7 +6,7 @@ use crate::go::{
     playermove::{Move, PlaceStoneMove},
 };
 
-struct Game<TBoard: FlexibleBoard> {
+pub struct Game<TBoard: FlexibleBoard> {
     board: TBoard,
     captured_by_black: u16,
     captured_by_white: u16,
@@ -23,7 +23,7 @@ impl<TBoard: FlexibleBoard> Game<TBoard> {
         }
     }
 
-    pub fn make_move(&mut self, m: Move) -> Result<(), MoveError> {
+    pub fn make_move(&mut self, m: &Move) -> Result<(), MoveError> {
         match m {
             Move::PlaceStone(place_stone_move) => {
                 let PlaceStoneMove { coord, player } = place_stone_move;
@@ -64,7 +64,10 @@ impl<TBoard: FlexibleBoard> Game<TBoard> {
 
                 Ok(())
             }
-            Move::Skip { .. } => todo!(),
+            Move::Skip { .. } => {
+                self.current_player = !self.current_player;
+                Ok(())
+            },
         }
     }
 
@@ -99,7 +102,7 @@ mod test {
         let mut game = Game::new(board);
 
         // When
-        let res = game.make_move(Move::PlaceStone(PlaceStoneMove {
+        let res = game.make_move(&Move::PlaceStone(PlaceStoneMove {
             player: Player::Black,
             coord: FlexibleCoordinate { x: 0, y: 0 },
         }));
@@ -132,7 +135,7 @@ mod test {
         let mut game = Game::new(board);
 
         // When
-        let res = game.make_move(Move::PlaceStone(PlaceStoneMove {
+        let res = game.make_move(&Move::PlaceStone(PlaceStoneMove {
             player: Player::Black,
             coord: FlexibleCoordinate { x: 3, y: 2 },
         }));
@@ -345,7 +348,7 @@ mod test {
 
         // When
         for m in moves {
-            game.make_move(Move::PlaceStone(m))
+            game.make_move(&Move::PlaceStone(m))
                 .expect("Expected move to be allowed");
         }
 

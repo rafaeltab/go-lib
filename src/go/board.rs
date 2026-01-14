@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use crate::go::{
     coordinate::FlexibleCoordinate, coordinate_set::CoordinateSet, group::Group, player::Player,
@@ -26,6 +26,10 @@ pub trait FlexibleBoard: Sized {
 
     fn predict_group(&self, m: &PlaceStoneMove) -> Group;
 
+    fn display(&self) -> DisplayFlexibleboard<'_, Self> {
+        DisplayFlexibleboard(self)
+    }
+
     fn get_liberties(&self, group: &Group) -> CoordinateSet {
         let grown = group.coordinates.grow(self.get_size());
         let possible_liberties = grown.subtract(&group.coordinates);
@@ -44,8 +48,8 @@ pub trait FlexibleBoard: Sized {
         Ok(coords.len())
     }
 
-    fn is_potential_suicide(&self, m: PlaceStoneMove) -> bool {
-        let potential_group = self.predict_group(&m);
+    fn is_potential_suicide(&self, m: &PlaceStoneMove) -> bool {
+        let potential_group = self.predict_group(m);
         let liberties = self.get_liberties(&potential_group);
         liberties.is_empty()
     }
@@ -73,6 +77,25 @@ pub trait FlexibleBoard: Sized {
         }
 
         res
+    }
+}
+
+pub struct DisplayFlexibleboard<'a, T: FlexibleBoard>(pub &'a T);
+
+impl<T: FlexibleBoard> Display for DisplayFlexibleboard<'_, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let size = self.0.get_size();
+        for y in 0..size.1 {
+            for x in 0..size.0 {
+                match self.0.get_player_at(&FlexibleCoordinate { x, y }) {
+                    None => write!(f, "  "),
+                    Some(Player::Black) => write!(f, "⚫"),
+                    Some(Player::White) => write!(f, "⚪"),
+                }?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
     }
 }
 
@@ -262,7 +285,7 @@ mod tests {
         let board = BitMaskBoard::from_position(|| TestMask::empty((9, 9)), position);
 
         // When
-        let res = board.is_potential_suicide(PlaceStoneMove {
+        let res = board.is_potential_suicide(&PlaceStoneMove {
             player: Player::White,
             coord: FlexibleCoordinate { x: 4, y: 4 },
         });
