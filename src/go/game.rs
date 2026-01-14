@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 use crate::go::{
     board::FlexibleBoard,
     player::Player,
@@ -71,8 +73,11 @@ impl<TBoard: FlexibleBoard> Game<TBoard> {
     }
 }
 
+#[derive(Debug, Error)]
 pub enum MoveError {
+    #[error("Can not place a stone where there already is a stone.")]
     CoordinateOccupied { occupied_by: Player },
+    #[error("Killing yourself is not nice, we'd like for you to live thank you.")]
     Suicide,
 }
 
@@ -151,5 +156,217 @@ mod test {
 
         assert_eq!(&expected_board, game.get_board());
         assert_eq!(3, game.captured_by_black);
+    }
+
+    #[test]
+    fn given_an_empty_board_when_a_full_game_is_played_then_it_should_have_actual_results() {
+        // Given
+        let board = BitMaskBoard::new(|| TestMask::empty((9, 9)));
+        let mut game = Game::new(board);
+        let a = 0;
+        let b = 1;
+        let c = 2;
+        let d = 3;
+        let e = 4;
+        let f = 5;
+        let g = 6;
+        let h = 7;
+        let i = 8;
+        let moves = vec![
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: g, y: c },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: e, y: e },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: e, y: d },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: g, y: e },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: d, y: e },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: d, y: f },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: f, y: e },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: e, y: f },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: f, y: d },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: f, y: f },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: g, y: f },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: g, y: g },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: c, y: f },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: c, y: g },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: c, y: e },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: h, y: f },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: b, y: g },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: b, y: h },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: b, y: f },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: d, y: h },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: h, y: d },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: h, y: e },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: g, y: d },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: i, y: d },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: h, y: g },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: h, y: c },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: i, y: c },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: i, y: b },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: h, y: b },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: i, y: c },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: g, y: b },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: i, y: e },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: h, y: a },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: a, y: g },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: i, y: a },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: a, y: f },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: i, y: g },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: h, y: h },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: a, y: e },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: a, y: h },
+            },
+            PlaceStoneMove {
+                player: Player::Black,
+                coord: FlexibleCoordinate { x: e, y: g },
+            },
+            PlaceStoneMove {
+                player: Player::White,
+                coord: FlexibleCoordinate { x: f, y: h },
+            },
+        ];
+
+        // When
+        for m in moves {
+            game.make_move(Move::PlaceStone(m))
+                .expect("Expected move to be allowed");
+        }
+
+        // Then
+        let e = None;
+        let expected_position = vec![
+            vec![e, e, e, e, e, e, e, B, B],
+            vec![e, e, e, e, e, e, B, B, W],
+            vec![e, e, e, e, e, e, B, W, W],
+            vec![e, e, e, e, B, B, B, B, W],
+            vec![B, e, B, B, W, B, W, W, W],
+            vec![W, B, B, W, W, W, e, W, e],
+            vec![W, B, W, e, B, e, W, B, B],
+            vec![W, W, e, W, e, W, e, W, e],
+            vec![e, e, e, e, e, e, e, e, e],
+        ];
+        let expected_board =
+            BitMaskBoard::from_position(|| TestMask::empty((9, 9)), expected_position);
+
+        assert_eq!(&expected_board, game.get_board());
+        assert_eq!(0, game.captured_by_black);
+        assert_eq!(2, game.captured_by_white);
     }
 }
